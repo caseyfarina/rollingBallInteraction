@@ -254,8 +254,8 @@ public class PhysicsBumper : MonoBehaviour
                 if (isFloatProperty)
                 {
                     // Animate float property (e.g., EmissionIntensity for shadergraph)
-                    // Add 1 first, then apply the curve progress to maintain flat look at base level
-                    float animatedValue = baseEmissionFloat + 1f + (emissionIntensity * progress);
+                    // Base should already be 1, so just add the animated intensity
+                    float animatedValue = baseEmissionFloat + (emissionIntensity * progress);
                     material.SetFloat(emissionPropertyName, animatedValue);
                 }
                 else
@@ -275,8 +275,8 @@ public class PhysicsBumper : MonoBehaviour
         {
             if (isFloatProperty)
             {
-                // Reset to base + 1 to maintain flat look
-                material.SetFloat(emissionPropertyName, baseEmissionFloat + 1f);
+                // Reset to original base value (which should already be 1 for flat look)
+                material.SetFloat(emissionPropertyName, baseEmissionFloat);
             }
             else
             {
