@@ -11,7 +11,13 @@ The project features a ball physics-based game template as the foundation, with 
 ## Key Unity Project Structure
 
 - **Main Scene**: `Assets/Scenes/ballPlayer.unity`
-- **Core Scripts Directory**: `Assets/Scripts/`
+- **Educational Scripts**: `Assets/Scripts/` (organized by function)
+  - `Input/` - Event source components
+  - `Actions/` - Event target components
+  - `Physics/` - Movement and physics systems
+  - `Game/` - Game management systems
+  - `UI/` - User interface components (future)
+  - `Examples/` - Example combinations (future)
 - **Input Configuration**: `Assets/InputSystem_Actions.inputactions`
 - **Solution File**: `interactionTemplate.sln`
 
@@ -48,40 +54,45 @@ The project features a ball physics-based game template as the foundation, with 
 - Movement mapped to WASD/gamepad stick
 - Jump mapped to Space/gamepad button
 
-### Game Systems
+### Educational Component Library
 
-#### Interactive Elements
-- `_bumper.cs` - Advanced bumper/repulsion system with:
+#### Input Components (Event Sources)
+Located in `Assets/Scripts/Input/`:
+- `InputKeyPress.cs` - Simple key press event system
+- `InputKeyCountdown.cs` - Key-based countdown system with TextMeshPro display
+- `InputTriggerZone.cs` - 3D collision detection by tag
+- `InputQuitGame.cs` - Application quit on Escape key
+
+#### Action Components (Event Targets)  
+Located in `Assets/Scripts/Actions/`:
+- `ActionSpawnObject.cs` - Manual single object spawning
+- `ActionAutoSpawner.cs` - Automatic object spawner with:
+  - Random spawn timing between min/max intervals
+  - Multiple prefab support with random selection
+  - Positional variance using insideUnitSphere
+- `ActionRestartScene.cs` - Scene restart functionality (R key)
+
+#### Physics Components
+Located in `Assets/Scripts/Physics/`:
+- `PhysicsPlayerController.cs` - Ball-based player controller with camera-relative movement
+- `PhysicsBumper.cs` - Advanced bumper/repulsion system with:
   - Configurable force direction (collision normal or radial)
   - Scale animation with custom curves and per-axis scaling
   - Material emission effects for visual feedback
   - Cooldown system with events
   - Comprehensive editor gizmos and debugging
-- `_collectionManager.cs` - Score/collection system with TextMeshPro display and threshold events
-- `_platformStick.cs` - Moving platform attachment system using physics forces
+- `PhysicsPlatformStick.cs` - Moving platform attachment system using physics forces
 
-#### Input & Events
-- `_keyEventOnDown.cs` - Simple key press event system using legacy Input
-- `_countDownKeyEvent.cs` - Key-based countdown system with TextMeshPro display
-- `escapeToQuitNewInput.cs` - Application quit on Escape using new Input System
-
-#### Spawning System
-- `simpleSpawner.cs` - Automatic object spawner with:
-  - Random spawn timing between min/max intervals  
-  - Multiple prefab support with random selection
-  - Positional variance using insideUnitSphere
-- `_spawnSingleObject.cs` - Manual single object spawning utility
-
-#### Legacy Utilities
-- `restartScene.cs` - Scene restart functionality (R key)
-- `_onTriggerEnterEventTag3D.cs` - Reusable trigger event system using UnityEvents
+#### Game Management Components
+Located in `Assets/Scripts/Game/`:
+- `GameCollectionManager.cs` - Score/collection system with TextMeshPro display and threshold events
 
 ## Code Conventions
 
-- **Naming**: Mixed conventions observed:
-  - Public classes: PascalCase (`BallController`) and underscore-prefixed (`_bumper`, `_collectionManager`)
-  - Some legacy camelCase (`restartScene`, `simpleSpawner`)
-  - Kebab-case for some files (`bumper-script.cs`, `platform-stick.cs`)
+- **Naming**: Educational naming convention implemented:
+  - **New Scripts**: `[Category][Purpose]` format (e.g., `InputKeyPress`, `ActionSpawnObject`)
+  - **Legacy Scripts**: Mixed conventions remain in root folder for migration
+  - **Categories**: Input, Action, Physics, Game, UI
 - **Physics**: Uses Unity's Rigidbody system with `linearVelocity` (new Unity physics API)
 - **Input**: Mixed approaches - new Input System callbacks and legacy `Input.GetKeyDown()`
 - **UI**: TextMeshPro integration for text display (`TMPro` namespace)
