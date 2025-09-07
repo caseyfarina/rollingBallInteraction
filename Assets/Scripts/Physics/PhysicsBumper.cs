@@ -128,8 +128,9 @@ public class PhysicsBumper : MonoBehaviour
         Vector3 bounceDirection;
         if (useCollisionNormal)
         {
-            // Use the collision normal as the base direction
-            bounceDirection = collision.contacts[0].normal;
+            // Use the collision normal, but inverted to push away from bumper
+            // The collision normal points into the surface, we want to push away
+            bounceDirection = -collision.contacts[0].normal;
         }
         else
         {
