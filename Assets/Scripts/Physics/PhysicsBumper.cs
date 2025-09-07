@@ -47,7 +47,10 @@ public class PhysicsBumper : MonoBehaviour
     [Tooltip("Should the bumper animate its material emission on collision?")]
     [SerializeField] private bool useEmissionAnimation = false;
 
-    [Tooltip("Color of the emission at peak animation")]
+    [Tooltip("Name of the shader property to animate (e.g., '_EmissionIntensity' for shadergraph)")]
+    [SerializeField] private string emissionPropertyName = "_EmissionColor";
+
+    [Tooltip("Color of the emission at peak animation (for standard materials)")]
     [SerializeField] private Color emissionColor = Color.white;
 
     [Tooltip("Intensity of the emission effect")]
@@ -61,6 +64,8 @@ public class PhysicsBumper : MonoBehaviour
     private Material material;
     private bool hasEmission = false;
     private Color baseEmissionColor;
+    private float baseEmissionFloat;
+    private bool isFloatProperty = false;
     private Coroutine animationCoroutine;
     private float lastTriggerTime = -Mathf.Infinity; // Initialize to allow immediate first use
 
@@ -95,16 +100,30 @@ public class PhysicsBumper : MonoBehaviour
             material = new Material(renderer.sharedMaterial);
             renderer.material = material;
 
-            // Enable emission if the material supports it
-            material.EnableKeyword("_EMISSION");
-            hasEmission = material.IsKeywordEnabled("_EMISSION");
-            if (hasEmission)
+            // Check if the specified property exists on the material
+            if (material.HasProperty(emissionPropertyName))
             {
-                baseEmissionColor = material.GetColor("_EmissionColor");
+                hasEmission = true;
+                
+                // Determine if it's a float or color property
+                if (material.GetFloat(emissionPropertyName) != null)
+                {
+                    // It's a float property (likely from shadergraph)
+                    isFloatProperty = true;
+                    baseEmissionFloat = material.GetFloat(emissionPropertyName);
+                    Debug.Log($"Found float property '{emissionPropertyName}' with base value: {baseEmissionFloat}");
+                }
+                else
+                {
+                    // Try as a color property (standard URP)
+                    isFloatProperty = false;
+                    baseEmissionColor = material.GetColor(emissionPropertyName);
+                    Debug.Log($"Found color property '{emissionPropertyName}' with base value: {baseEmissionColor}");
+                }
             }
             else
             {
-                Debug.LogWarning("Material does not support emission. Emission animation will be disabled.");
+                Debug.LogWarning($"Material does not have property '{emissionPropertyName}'. Emission animation will be disabled.");
                 useEmissionAnimation = false;
             }
         }
@@ -232,8 +251,19 @@ public class PhysicsBumper : MonoBehaviour
             // Animate emission if enabled
             if (useEmissionAnimation && hasEmission && material != null)
             {
-                Color targetEmission = emissionColor * emissionIntensity;
-                material.SetColor("_EmissionColor", Color.Lerp(baseEmissionColor, targetEmission, progress));
+                if (isFloatProperty)
+                {
+                    // Animate float property (e.g., EmissionIntensity for shadergraph)
+                    // Add 1 first, then apply the curve progress to maintain flat look at base level
+                    float animatedValue = baseEmissionFloat + 1f + (emissionIntensity * progress);
+                    material.SetFloat(emissionPropertyName, animatedValue);
+                }
+                else
+                {
+                    // Animate color property (standard URP emission)
+                    Color targetEmission = emissionColor * emissionIntensity;
+                    material.SetColor(emissionPropertyName, Color.Lerp(baseEmissionColor, targetEmission, progress));
+                }
             }
             
             yield return null;
@@ -243,7 +273,15 @@ public class PhysicsBumper : MonoBehaviour
         transform.localScale = originalScale;
         if (useEmissionAnimation && hasEmission && material != null)
         {
-            material.SetColor("_EmissionColor", baseEmissionColor);
+            if (isFloatProperty)
+            {
+                // Reset to base + 1 to maintain flat look
+                material.SetFloat(emissionPropertyName, baseEmissionFloat + 1f);
+            }
+            else
+            {
+                material.SetColor(emissionPropertyName, baseEmissionColor);
+            }
         }
 
         animationCoroutine = null;
