@@ -248,7 +248,7 @@ public class PhysicsBumper : MonoBehaviour
             // Animate scale
             transform.localScale = Vector3.Lerp(originalScale, targetScale, progress);
 
-            // Animate emission if enabled
+            // Animate emission if enabled (check useEmissionAnimation every frame)
             if (useEmissionAnimation && hasEmission && material != null)
             {
                 if (isFloatProperty)
