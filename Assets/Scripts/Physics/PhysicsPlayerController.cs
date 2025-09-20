@@ -12,38 +12,66 @@ public class PhysicsPlayerController : MonoBehaviour
     [Header("Movement Settings")]
     [SerializeField] private float moveForce = 10f;
     [SerializeField] private float maxVelocity = 20f;
+    [SerializeField] private bool enableAirControl = false;
 
     [Header("Jump Settings")]
     [SerializeField] private float jumpForce = 7f;
     [SerializeField] private float groundCheckRadius = 0.2f;
     [SerializeField] private LayerMask groundLayer;
 
+    // The Header has been moved here, as it can only be applied to fields/properties.
+    [Header("Events")]
+    public UnityEvent OnJumpEvent;
+    public UnityEvent OnIdleEvent;
+    [SerializeField] private float idleTimeThreshold = 5f;
+
     private Rigidbody rb;
     private Camera mainCamera;
     private Vector2 moveInput;
     private bool isGrounded;
     private bool jumpRequested;
+    private float idleTimer;
 
+    // Public Properties for force values
+    public float MoveForce
+    {
+        get { return moveForce; }
+        set { moveForce = value; }
+    }
+
+    public float JumpForce
+    {
+        get { return jumpForce; }
+        set { jumpForce = value; }
+    }
 
 
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
-        mainCamera = Camera.main;
+        if (rb == null)
+        {
+            Debug.LogError("Rigidbody component missing from this GameObject. Please add one.", this);
+            enabled = false;
+        }
 
+        mainCamera = Camera.main;
+        if (mainCamera == null)
+        {
+            Debug.LogError("Main camera not found. Please ensure a camera is tagged as 'MainCamera'.");
+        }
     }
 
     public void Update()
     {
-        
+        CheckIdleState();
     }
-
 
 
     public void OnMove(InputValue value)
     {
         moveInput = value.Get<Vector2>();
- 
+        idleTimer = 0f;
     }
 
     public void OnJump(InputValue value)
@@ -52,18 +80,37 @@ public class PhysicsPlayerController : MonoBehaviour
         {
             jumpRequested = true;
         }
+        idleTimer = 0f;
     }
 
     private void FixedUpdate()
     {
+        if (rb == null) return;
+
         CheckGrounded();
         HandleMovement();
         HandleJump();
     }
 
+    private void CheckIdleState()
+    {
+        if (moveInput == Vector2.zero && rb.linearVelocity.sqrMagnitude < 0.01f)
+        {
+            idleTimer += Time.deltaTime;
+            if (idleTimer >= idleTimeThreshold)
+            {
+                OnIdleEvent.Invoke();
+                idleTimer = 0f;
+            }
+        }
+        else
+        {
+            idleTimer = 0f;
+        }
+    }
+
     private void CheckGrounded()
     {
-        // Check if there's ground below us using a sphere cast
         isGrounded = Physics.CheckSphere(
             transform.position - new Vector3(0f, 0.1f, 0f),
             groundCheckRadius,
@@ -73,24 +120,25 @@ public class PhysicsPlayerController : MonoBehaviour
 
     private void HandleMovement()
     {
+        if (!isGrounded && !enableAirControl)
+        {
+            return;
+        }
+
         Vector3 inputDirection = new Vector3(moveInput.x, 0f, moveInput.y).normalized;
 
         if (inputDirection != Vector3.zero)
         {
-            // Convert input direction to be relative to camera
-            Vector3 cameraForward = mainCamera.transform.forward;
-            Vector3 cameraRight = mainCamera.transform.right;
+            Vector3 cameraForward = mainCamera != null ? mainCamera.transform.forward : Vector3.forward;
+            Vector3 cameraRight = mainCamera != null ? mainCamera.transform.right : Vector3.right;
 
-            // Project camera's forward and right vectors onto the horizontal plane
             cameraForward.y = 0f;
             cameraRight.y = 0f;
             cameraForward.Normalize();
             cameraRight.Normalize();
 
-            // Calculate the final movement direction
             Vector3 moveDirection = (cameraRight * inputDirection.x + cameraForward * inputDirection.z);
 
-            // Apply force only if below max velocity
             if (rb.linearVelocity.magnitude < maxVelocity)
             {
                 rb.AddForce(moveDirection * moveForce, ForceMode.Force);
@@ -104,7 +152,15 @@ public class PhysicsPlayerController : MonoBehaviour
         {
             rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
             jumpRequested = false;
+
+            OnJumpEvent.Invoke();
         }
+    }
+
+    // Public methods for Unity Events are now correctly grouped under the header.
+    public void EnableAirControl(bool value)
+    {
+        enableAirControl = value;
     }
 
     // Optional: Visualize the ground check radius in the editor
